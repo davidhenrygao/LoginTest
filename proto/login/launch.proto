@@ -8,7 +8,7 @@ message c2s_launch{
        hashkey(a) transfer a to 8 byte key.
 
        etoken = base64(token)+"@"+base64(subid)+":"+base64(index)
-       hmac = base64(hmac64(hashkey(etoken), secret))
+       hmac = base64(hmac64_md5(hashkey(etoken), secret))
        signature = etoken+":"+hmac
        */
     required string signature = 1;

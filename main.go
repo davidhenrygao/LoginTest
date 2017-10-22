@@ -5,6 +5,7 @@ import (
 	"github.com/davidhenrygao/LoginTest/proto/common"
 	"github.com/davidhenrygao/LoginTest/proto/login"
 	//"github.com/davidhenrygao/LoginTest/proto/player"
+	"crypto/des"
 	"encoding/base64"
 	"github.com/golang/protobuf/proto"
 	"net"
@@ -34,12 +35,20 @@ func base64Decode(s string) []byte {
 }
 
 func main() {
-	fmt.Println("Connect to server(192.168.2.188:10086).")
-	conn, err := net.Dial("tcp", "192.168.2.188:10086")
+	//fmt.Println("Connect to server(192.168.2.188:10086).")
+	//conn, err := net.Dial("tcp", "192.168.2.188:10086")
+	fmt.Println("Connect to server(192.168.0.168:10086).")
+	conn, err := net.Dial("tcp", "192.168.0.168:10086")
 	if err != nil {
 		fmt.Printf("Connect to server error: %s.\n", err)
 		return
 	}
+	defer func() {
+		err = conn.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	//challenge
 	var pro protocol
@@ -60,10 +69,10 @@ func main() {
 	challengeStr := s2c_challenge.GetChallenge()
 	challenge := base64Decode(challengeStr)
 	if challenge == nil || len(challenge) != 8 {
-		fmt.Printf("challenge(%#v) illegal!\n", challenge)
+		fmt.Printf("challenge(%#x) illegal!\n", challenge)
 		return
 	}
-	fmt.Printf("challenge: %#v\n", challenge)
+	fmt.Printf("challenge: %#x\n", challenge)
 
 	//exchangekey
 	c2s_exchangekey := &login.C2SExchangekey{}
@@ -73,7 +82,7 @@ func main() {
 		return
 	}
 	clientkeyStr := base64.StdEncoding.EncodeToString(exclientkey)
-	fmt.Println("base64(clientkey) string: ", clientkeyStr)
+	fmt.Println("base64(dh-exchange(clientkey)) string: ", clientkeyStr)
 	c2s_exchangekey.Clientkey = proto.String(clientkeyStr)
 	data := Marshal(c2s_exchangekey)
 	if data == nil {
@@ -98,15 +107,107 @@ func main() {
 	serverkeyStr := s2c_exchangekey.GetServerkey()
 	serverkey := base64Decode(serverkeyStr)
 	if serverkey == nil || len(serverkey) != 8 {
-		fmt.Printf("serverkey(%#v) illegal!\n", serverkey)
+		fmt.Printf("serverkey(%#x) illegal!\n", serverkey)
 		return
 	}
-	fmt.Printf("serverkey: %#v\n", serverkey)
+	fmt.Printf("serverkey: %#x\n", serverkey)
 	err, secret := DHSecret(serverkey, clientkey)
 	if err != nil {
 		return
 	}
-	fmt.Printf("secret = %+v\n", secret)
+	fmt.Printf("secret = %#x\n", secret)
 
 	//handshake
+	c2s_handshake := &login.C2SHandshake{}
+	encodeChallengeStr := base64.StdEncoding.EncodeToString(hmac64_md5(challenge, secret))
+	fmt.Println("base64(hmac64_md5(challenge, secret)) string: ", encodeChallengeStr)
+	c2s_handshake.EncodeChallenge = proto.String(encodeChallengeStr)
+	data = Marshal(c2s_handshake)
+	if data == nil {
+		fmt.Println("Marshal c2s_handshake error.")
+		return
+	}
+	err = writePackage(conn, uint32(common.Cmd_LOGIN_HANDSHAKE), data)
+	if err != nil {
+		fmt.Println("c2s_handshake writePackage error.")
+		return
+	}
+	err, pro = readPackage(conn)
+	if err != nil {
+		return
+	}
+	s2c_handshake := &login.S2CHandshake{}
+	err = Unmarshal(pro.data, s2c_handshake)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c handshake error: %+v\n", err)
+		return
+	}
+	code := s2c_handshake.GetCode()
+	if code != 0 {
+		fmt.Printf("handshake error: code = %+v\n", code)
+		return
+	}
+
+	//login
+	c2s_login := &login.C2SLogin{}
+	token := "david"
+	platform := "finyin"
+	tokenStr := base64.StdEncoding.EncodeToString([]byte(token))
+	platformStr := base64.StdEncoding.EncodeToString([]byte(platform))
+	tpStr := tokenStr + "@" + platformStr
+	codec, err := des.NewCipher(secret)
+	if err != nil {
+		fmt.Printf("DES new cipher err = %+v\n", err)
+		return
+	}
+	etp := make([]byte, len(tpStr))
+	codec.Encrypt(etp, []byte(tpStr))
+	etpStr := base64.StdEncoding.EncodeToString(etp)
+	fmt.Println("base64(DES(secret, token)) string: ", etpStr)
+	c2s_login.Token = proto.String(etpStr)
+	data = Marshal(c2s_login)
+	if data == nil {
+		fmt.Println("Marshal c2s_login error.")
+		return
+	}
+	err = writePackage(conn, uint32(common.Cmd_LOGIN), data)
+	if err != nil {
+		fmt.Println("c2s_login writePackage error.")
+		return
+	}
+	err, pro = readPackage(conn)
+	if err != nil {
+		return
+	}
+	s2c_login := &login.S2CLogin{}
+	err = Unmarshal(pro.data, s2c_login)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_login error: %+v\n", err)
+		return
+	}
+	code = s2c_login.GetCode()
+	if code != 0 {
+		fmt.Printf("handshake error: code = %+v\n", code)
+		return
+	}
+	fmt.Println("Login success!")
+	serverinfo := s2c_login.GetInfo()
+	subid, err := base64.StdEncoding.DecodeString(serverinfo.GetSubid())
+	if err != nil {
+		fmt.Printf("login get subid base64 decode error: %#v.\n", err)
+		return
+	}
+	serveraddr, err := base64.StdEncoding.DecodeString(serverinfo.GetServerAddr())
+	if err != nil {
+		fmt.Printf("login get serveraddr base64 decode error: %#v.\n", err)
+		return
+	}
+	fmt.Printf("subid: %s.\n", string(subid))
+	fmt.Printf("serveraddr: %s.\n", string(serveraddr))
+
+	//index := 1
+	//launch 1
+	//index += 1
+	//launch 2
+	//logout
 }

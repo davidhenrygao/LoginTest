@@ -45,15 +45,15 @@ func (p *protocol) Serialize() (error, []byte) {
 
 func (p *protocol) Unserialize(b []byte) error {
 	buf := bytes.NewReader(b)
-	err := binary.Read(buf, binary.BigEndian, p.session)
+	err := binary.Read(buf, binary.BigEndian, &(p.session))
 	if err != nil {
 		return err
 	}
-	err = binary.Read(buf, binary.BigEndian, p.cmd)
+	err = binary.Read(buf, binary.BigEndian, &(p.cmd))
 	if err != nil {
 		return err
 	}
-	err = binary.Read(buf, binary.BigEndian, p.len)
+	err = binary.Read(buf, binary.BigEndian, &(p.len))
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (p *protocol) Unserialize(b []byte) error {
 	if err != nil {
 		return err
 	}
-	err = binary.Read(buf, binary.BigEndian, p.checksum)
+	err = binary.Read(buf, binary.BigEndian, &(p.checksum))
 	if err != nil {
 		return err
 	}
