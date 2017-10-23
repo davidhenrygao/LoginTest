@@ -18,7 +18,7 @@ type C2SLaunch struct {
 	// hashkey(a) transfer a to 8 byte key.
 	//
 	// etoken = base64(token)+"@"+base64(subid)+":"+base64(index)
-	// hmac = base64(hmac64(hashkey(etoken), secret))
+	// hmac = base64(hmac64_md5(hashkey(etoken), secret))
 	// signature = etoken+":"+hmac
 	Signature        *string `protobuf:"bytes,1,req,name=signature" json:"signature,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`

@@ -18,10 +18,10 @@ func LocalEndian() binary.ByteOrder {
 	p := unsafe.Pointer(&x)
 	p2 := (*[N]byte)(p)
 	if p2[0] == 1 {
-		fmt.Println("LittleEndian.")
+		//fmt.Println("LittleEndian.")
 		return binary.LittleEndian
 	} else {
-		fmt.Println("BigEndian.")
+		//fmt.Println("BigEndian.")
 		return binary.BigEndian
 	}
 }

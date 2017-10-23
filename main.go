@@ -1,14 +1,14 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/davidhenrygao/LoginTest/proto/common"
 	"github.com/davidhenrygao/LoginTest/proto/login"
-	//"github.com/davidhenrygao/LoginTest/proto/player"
-	"crypto/des"
-	"encoding/base64"
+	"github.com/davidhenrygao/LoginTest/proto/player"
 	"github.com/golang/protobuf/proto"
 	"net"
+	"strconv"
 )
 
 func Marshal(v interface{}) []byte {
@@ -34,13 +34,151 @@ func base64Decode(s string) []byte {
 	return b
 }
 
-func main() {
-	//fmt.Println("Connect to server(192.168.2.188:10086).")
-	//conn, err := net.Dial("tcp", "192.168.2.188:10086")
-	fmt.Println("Connect to server(192.168.0.168:10086).")
-	conn, err := net.Dial("tcp", "192.168.0.168:10086")
+var index int = 1
+
+func doEcho(conn net.Conn, msg string) error {
+	fmt.Println("Send echo msg: ", msg)
+	c2s_echo := &player.C2SEcho{}
+	c2s_echo.Msg = proto.String(msg)
+	data := Marshal(c2s_echo)
+	if data == nil {
+		fmt.Println("Marshal c2s_echo error.")
+		return fmt.Errorf("Marshal c2s_echo error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_ECHO), data)
 	if err != nil {
-		fmt.Printf("Connect to server error: %s.\n", err)
+		fmt.Println("c2s_echo writePackage error.")
+		return fmt.Errorf("c2s_echo writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_echo := &player.S2CEcho{}
+	err = Unmarshal(pro.data, s2c_echo)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_echo error: %+v\n", err)
+		return err
+	}
+	msgback := s2c_echo.GetMsg()
+	fmt.Printf("msgback = %+v\n", msgback)
+	return nil
+}
+
+func doLogout(conn net.Conn, uid uint64) error {
+	fmt.Printf("logout player: id(%d).\n", uid)
+	c2s_logout := &player.C2SLogout{}
+	c2s_logout.Uid = proto.Uint64(uid)
+	data := Marshal(c2s_logout)
+	if data == nil {
+		fmt.Println("Marshal c2s_logout error.")
+		return fmt.Errorf("Marshal c2s_logout error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_LOGOUT), data)
+	if err != nil {
+		fmt.Println("c2s_logout writePackage error.")
+		return fmt.Errorf("c2s_logout writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_logout := &player.S2CLogout{}
+	err = Unmarshal(pro.data, s2c_logout)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_logout error: %+v\n", err)
+		return err
+	}
+	code := s2c_logout.GetCode()
+	fmt.Printf("logout code = %+v\n", code)
+	return nil
+}
+
+func launch(serveraddr string, secret, token, subid []byte, echo string, logout bool) error {
+	fmt.Printf("Connect to server(%s).\n", serveraddr)
+	conn, err := net.Dial("tcp", serveraddr)
+	if err != nil {
+		fmt.Printf("Connect to gate server error: %s.\n", err)
+		return err
+	}
+	defer func() {
+		err = conn.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+		index++
+	}()
+
+	c2s_launch := &login.C2SLaunch{}
+	t := base64.StdEncoding.EncodeToString(token)
+	s := base64.StdEncoding.EncodeToString(subid)
+	idx := base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(index)))
+	etoken := t + "@" + s + ":" + idx
+	hetoken := hashkey([]byte(etoken))
+	hmac := hmac64_md5(hetoken, secret)
+	hmacStr := base64.StdEncoding.EncodeToString(hmac)
+	/*
+		fmt.Printf("etoken = %+v\n", etoken)
+		fmt.Printf("secret = %#x\n", secret)
+		fmt.Printf("hashkey = %#x\n", hetoken)
+		fmt.Printf("hmac = %#x\n", hmac)
+		fmt.Printf("hmacStr = %s\n", hmacStr)
+	*/
+	signature := etoken + ":" + hmacStr
+	fmt.Println("signature: ", signature)
+	c2s_launch.Signature = proto.String(signature)
+	data := Marshal(c2s_launch)
+	if data == nil {
+		fmt.Println("Marshal c2s_launch error.")
+		return fmt.Errorf("Marshal c2s_launch error.")
+	}
+	err = writePackage(conn, uint32(common.Cmd_LOGIN_LAUNCH), data)
+	if err != nil {
+		fmt.Println("c2s_launch writePackage error.")
+		return fmt.Errorf("c2s_launch writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_launch := &login.S2CLaunch{}
+	err = Unmarshal(pro.data, s2c_launch)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_launch error: %+v\n", err)
+		return err
+	}
+	code := s2c_launch.GetCode()
+	if code != 0 {
+		fmt.Printf("launch error: code = %+v\n", code)
+		return fmt.Errorf("launch error.")
+	}
+	player := s2c_launch.GetPlayer()
+	fmt.Printf("player = %+v\n", player)
+
+	if echo != "" {
+		err = doEcho(conn, echo)
+		if err != nil {
+			return err
+		}
+	}
+
+	if logout {
+		err = doLogout(conn, player.GetId())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func main() {
+	fmt.Println("Connect to server(192.168.2.188:10086).")
+	conn, err := net.Dial("tcp", "192.168.2.188:10086")
+	//fmt.Println("Connect to server(192.168.0.168:10086).")
+	//conn, err := net.Dial("tcp", "192.168.0.168:10086")
+	if err != nil {
+		fmt.Printf("Connect to login server error: %s.\n", err)
 		return
 	}
 	defer func() {
@@ -155,13 +293,11 @@ func main() {
 	tokenStr := base64.StdEncoding.EncodeToString([]byte(token))
 	platformStr := base64.StdEncoding.EncodeToString([]byte(platform))
 	tpStr := tokenStr + "@" + platformStr
-	codec, err := des.NewCipher(secret)
+	err, etp := EncryptDES_ECB([]byte(tpStr), secret)
 	if err != nil {
-		fmt.Printf("DES new cipher err = %+v\n", err)
+		fmt.Printf("EncryptDES_ECB error = %+v\n", err)
 		return
 	}
-	etp := make([]byte, len(tpStr))
-	codec.Encrypt(etp, []byte(tpStr))
 	etpStr := base64.StdEncoding.EncodeToString(etp)
 	fmt.Println("base64(DES(secret, token)) string: ", etpStr)
 	c2s_login.Token = proto.String(etpStr)
@@ -202,12 +338,27 @@ func main() {
 		fmt.Printf("login get serveraddr base64 decode error: %#v.\n", err)
 		return
 	}
-	fmt.Printf("subid: %s.\n", string(subid))
+	fmt.Printf("base64(subid): %s.\n", base64.StdEncoding.EncodeToString(subid))
 	fmt.Printf("serveraddr: %s.\n", string(serveraddr))
 
-	//index := 1
 	//launch 1
-	//index += 1
+	err = launch(string(serveraddr), secret, []byte(token), subid, "Hi! Server", false)
+	if err != nil {
+		fmt.Printf("launch error = %+v\n", err)
+		return
+	}
 	//launch 2
-	//logout
+	err = launch(string(serveraddr), secret, []byte(token), subid, "Good luck!", true)
+	if err != nil {
+		fmt.Printf("launch error = %+v\n", err)
+		return
+	}
+	//launch 3
+	err = launch(string(serveraddr), secret, []byte(token), subid, "Good Bye!", true)
+	if err != nil {
+		fmt.Printf("launch error = %+v\n", err)
+		return
+	}
+
+	fmt.Println("All test pass!")
 }

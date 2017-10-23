@@ -15,7 +15,7 @@ type protocol struct {
 	cmd      uint32
 	len      uint16
 	data     []byte
-	checksum uint16
+	checksum uint32
 }
 
 func (p *protocol) Serialize() (error, []byte) {

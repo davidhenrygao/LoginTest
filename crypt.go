@@ -1,8 +1,9 @@
 package main
 
 import (
+	"crypto/des"
 	"crypto/md5"
-	//"fmt"
+	"fmt"
 )
 
 func hmac64_md5(data []byte, key []byte) []byte {
@@ -45,4 +46,84 @@ func hashkey(data []byte) []byte {
 	key[6] = byte((js_hash >> 16) & 0xff)
 	key[7] = byte((js_hash >> 24) & 0xff)
 	return key
+}
+
+func desPadding(orig []byte, blockSize int) []byte {
+	l := len(orig)
+	m := l % blockSize
+	padding := make([]byte, blockSize-m)
+	padding[0] = 0x80
+	out := make([]byte, l+blockSize-m)
+	copy(out[:l], orig)
+	copy(out[l:], padding)
+	return out
+}
+
+func desUnpadding(orig []byte, blockSize int) (error, []byte) {
+	l := len(orig)
+	padding := orig[l-blockSize:]
+	var cnt int = 0
+	var found bool = false
+	for i := blockSize - 1; i > 0; i-- {
+		cnt++
+		if padding[i] == 0 {
+			continue
+		}
+		if padding[i] == 0x80 {
+			found = true
+			break
+		} else {
+			return fmt.Errorf("Unknown Padding!"), nil
+		}
+	}
+	if !found {
+		return fmt.Errorf("Unknown Padding!"), nil
+	}
+	out := orig[:l-cnt]
+	return nil, out
+}
+
+//ECB加密
+func EncryptDES_ECB(src, key []byte) (error, []byte) {
+	block, err := des.NewCipher(key)
+	if err != nil {
+		return err, nil
+	}
+	bs := block.BlockSize()
+	data := desPadding(src, bs)
+	if len(data)%bs != 0 {
+		return fmt.Errorf("Need a multiple of the blocksize"), nil
+	}
+	out := make([]byte, len(data))
+	dst := out
+	for len(data) > 0 {
+		//对明文按照blocksize进行分块加密
+		//必要时可以使用go关键字进行并行加密
+		block.Encrypt(dst, data[:bs])
+		data = data[bs:]
+		dst = dst[bs:]
+	}
+	return nil, out
+}
+
+//ECB解密
+func DecryptDES_ECB(src, key []byte) (error, []byte) {
+	block, err := des.NewCipher(key)
+	if err != nil {
+		return err, nil
+	}
+	bs := block.BlockSize()
+	data := src
+	if len(data)%bs != 0 {
+		return fmt.Errorf("Need a multiple of the blocksize"), nil
+	}
+	out := make([]byte, len(data))
+	dst := out
+	for len(data) > 0 {
+		block.Decrypt(dst, data[:bs])
+		data = data[bs:]
+		dst = dst[bs:]
+	}
+	err, out = desUnpadding(out, bs)
+	return nil, out
 }
