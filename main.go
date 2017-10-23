@@ -9,6 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"net"
 	"strconv"
+	"time"
 )
 
 func Marshal(v interface{}) []byte {
@@ -173,10 +174,10 @@ func launch(serveraddr string, secret, token, subid []byte, echo string, logout 
 }
 
 func main() {
-	fmt.Println("Connect to server(192.168.2.188:10086).")
-	conn, err := net.Dial("tcp", "192.168.2.188:10086")
-	//fmt.Println("Connect to server(192.168.0.168:10086).")
-	//conn, err := net.Dial("tcp", "192.168.0.168:10086")
+	//loginserveradd := "192.168.2.188:10086"
+	loginserveradd := "192.168.0.168:10086"
+	fmt.Printf("Connect to server(%s).", loginserveradd)
+	conn, err := net.Dial("tcp", loginserveradd)
 	if err != nil {
 		fmt.Printf("Connect to login server error: %s.\n", err)
 		return
@@ -347,18 +348,22 @@ func main() {
 		fmt.Printf("launch error = %+v\n", err)
 		return
 	}
-	//launch 2
-	err = launch(string(serveraddr), secret, []byte(token), subid, "Good luck!", true)
-	if err != nil {
-		fmt.Printf("launch error = %+v\n", err)
-		return
-	}
-	//launch 3
-	err = launch(string(serveraddr), secret, []byte(token), subid, "Good Bye!", true)
-	if err != nil {
-		fmt.Printf("launch error = %+v\n", err)
-		return
-	}
+	/*
+		//launch 2
+		err = launch(string(serveraddr), secret, []byte(token), subid, "Good luck!", true)
+		if err != nil {
+			fmt.Printf("launch error = %+v\n", err)
+			return
+		}
+		//launch 3
+		err = launch(string(serveraddr), secret, []byte(token), subid, "Good Bye!", true)
+		if err != nil {
+			fmt.Printf("launch error = %+v\n", err)
+			return
+		}
+	*/
+
+	time.Sleep(10 * time.Second)
 
 	fmt.Println("All test pass!")
 }
