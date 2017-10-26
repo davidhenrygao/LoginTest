@@ -1,7 +1,3 @@
-package login;
-
-option go_package = "github.com/davidhenrygao/LoginTest/proto/login";
-
 /*
    DES采用ECB模式，padding方式如下：
    DES(secret, origText), m = sizeof(origText) % 8, a = 8 - m;

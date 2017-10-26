@@ -1,7 +1,3 @@
-package login;
-
-option go_package = "github.com/davidhenrygao/LoginTest/proto/login";
-
 message c2s_launch{
     /*
        index begin from 1, and increase every re-launch.

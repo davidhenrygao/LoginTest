@@ -174,8 +174,8 @@ func launch(serveraddr string, secret, token, subid []byte, echo string, logout 
 }
 
 func main() {
-	//loginserveradd := "192.168.2.188:10086"
-	loginserveradd := "192.168.0.168:10086"
+	loginserveradd := "192.168.2.188:10086"
+	//loginserveradd := "192.168.0.168:10086"
 	fmt.Printf("Connect to server(%s).", loginserveradd)
 	conn, err := net.Dial("tcp", loginserveradd)
 	if err != nil {
@@ -212,6 +212,8 @@ func main() {
 		return
 	}
 	fmt.Printf("challenge: %#x\n", challenge)
+
+	time.Sleep(10 * time.Second)
 
 	//exchangekey
 	c2s_exchangekey := &login.C2SExchangekey{}
