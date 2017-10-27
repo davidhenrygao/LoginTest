@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"unsafe"
+	//"unsafe"
 )
 
 const (
@@ -11,6 +11,7 @@ const (
 	G uint64 = 5
 )
 
+/*
 const N int = int(unsafe.Sizeof(0))
 
 func LocalEndian() binary.ByteOrder {
@@ -25,6 +26,7 @@ func LocalEndian() binary.ByteOrder {
 		return binary.BigEndian
 	}
 }
+*/
 
 func mul_mod_p(a uint64, b uint64) uint64 {
 	var m uint64 = 0
@@ -73,7 +75,7 @@ func DHExchange(key []byte) (error, []byte) {
 			len(key))
 		return err, nil
 	}
-	endian := LocalEndian()
+	endian := binary.LittleEndian
 	e := endian.Uint64(key)
 	ret := powModP(G, e)
 	exkey := make([]byte, 8)
@@ -87,7 +89,7 @@ func DHSecret(pub []byte, pri []byte) (error, []byte) {
 			len(pub), len(pri))
 		return err, nil
 	}
-	endian := LocalEndian()
+	endian := binary.LittleEndian
 	a := endian.Uint64(pub)
 	b := endian.Uint64(pri)
 	ret := powModP(a, b)
