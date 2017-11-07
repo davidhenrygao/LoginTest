@@ -95,7 +95,7 @@ func doLogout(conn net.Conn, uid uint64) error {
 	return nil
 }
 
-func launch(serveraddr string, secret, token, subid []byte, echo string, logout bool) error {
+func launch(serveraddr string, secret, openid, subid []byte, echo string, logout bool) error {
 	fmt.Printf("Connect to server(%s).\n", serveraddr)
 	conn, err := net.Dial("tcp", serveraddr)
 	if err != nil {
@@ -111,7 +111,7 @@ func launch(serveraddr string, secret, token, subid []byte, echo string, logout 
 	}()
 
 	c2s_launch := &login.C2SLaunch{}
-	t := base64.StdEncoding.EncodeToString(token)
+	t := base64.StdEncoding.EncodeToString(openid)
 	s := base64.StdEncoding.EncodeToString(subid)
 	idx := base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(index)))
 	etoken := t + "@" + s + ":" + idx
@@ -176,6 +176,7 @@ func launch(serveraddr string, secret, token, subid []byte, echo string, logout 
 func main() {
 	loginserveradd := "192.168.2.188:10086"
 	//loginserveradd := "192.168.0.168:10086"
+	//loginserveradd := "192.168.36.64:10086"
 	fmt.Printf("Connect to server(%s).", loginserveradd)
 	conn, err := net.Dial("tcp", loginserveradd)
 	if err != nil {
@@ -213,7 +214,7 @@ func main() {
 	}
 	fmt.Printf("challenge: %#x\n", challenge)
 
-	time.Sleep(10 * time.Second)
+	//time.Sleep(10 * time.Second)
 
 	//exchangekey
 	c2s_exchangekey := &login.C2SExchangekey{}
@@ -291,19 +292,27 @@ func main() {
 
 	//login
 	c2s_login := &login.C2SLogin{}
-	token := "david"
-	platform := "finyin"
-	tokenStr := base64.StdEncoding.EncodeToString([]byte(token))
-	platformStr := base64.StdEncoding.EncodeToString([]byte(platform))
-	tpStr := tokenStr + "@" + platformStr
-	err, etp := EncryptDES_ECB([]byte(tpStr), secret)
-	if err != nil {
-		fmt.Printf("EncryptDES_ECB error = %+v\n", err)
-		return
-	}
-	etpStr := base64.StdEncoding.EncodeToString(etp)
-	fmt.Println("base64(DES(secret, token)) string: ", etpStr)
-	c2s_login.Token = proto.String(etpStr)
+	openid := "1234567890"
+	c2s_login.Platformid = proto.Uint32(1)
+	c2s_login.Openid = proto.String(openid)
+	c2s_login.Unionid = proto.String("abcdefghijk")
+	c2s_login.Nickname = proto.String("david")
+	c2s_login.Headimgurl = proto.String("https://www.wx.com/davidhenry.jpg")
+	/*
+		token := "david"
+		platform := "finyin"
+		tokenStr := base64.StdEncoding.EncodeToString([]byte(token))
+		platformStr := base64.StdEncoding.EncodeToString([]byte(platform))
+		tpStr := tokenStr + "@" + platformStr
+		err, etp := EncryptDES_ECB([]byte(tpStr), secret)
+		if err != nil {
+			fmt.Printf("EncryptDES_ECB error = %+v\n", err)
+			return
+		}
+		etpStr := base64.StdEncoding.EncodeToString(etp)
+		fmt.Println("base64(DES(secret, token)) string: ", etpStr)
+		c2s_login.Token = proto.String(etpStr)
+	*/
 	data = Marshal(c2s_login)
 	if data == nil {
 		fmt.Println("Marshal c2s_login error.")
@@ -345,18 +354,18 @@ func main() {
 	fmt.Printf("serveraddr: %s.\n", string(serveraddr))
 
 	//launch 1
-	err = launch(string(serveraddr), secret, []byte(token), subid, "Hi! Server", false)
+	err = launch(string(serveraddr), secret, []byte(openid), subid, "Hi! Server", false)
+	if err != nil {
+		fmt.Printf("launch error = %+v\n", err)
+		return
+	}
+	//launch 2
+	err = launch(string(serveraddr), secret, []byte(openid), subid, "Good luck!", true)
 	if err != nil {
 		fmt.Printf("launch error = %+v\n", err)
 		return
 	}
 	/*
-		//launch 2
-		err = launch(string(serveraddr), secret, []byte(token), subid, "Good luck!", true)
-		if err != nil {
-			fmt.Printf("launch error = %+v\n", err)
-			return
-		}
 		//launch 3
 		err = launch(string(serveraddr), secret, []byte(token), subid, "Good Bye!", true)
 		if err != nil {

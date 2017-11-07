@@ -1,4 +1,4 @@
-package player;
+package protocol;
 
 option go_package = "github.com/davidhenrygao/LoginTest/proto/player";
 

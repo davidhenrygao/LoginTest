@@ -1,3 +1,0 @@
-message test {
-	required string s = 1;
-};

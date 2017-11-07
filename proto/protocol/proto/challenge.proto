@@ -1,3 +1,0 @@
-message s2c_challenge{
-    required string challenge = 1; //base64(8 byte randomkey)
-};

@@ -1,7 +1,0 @@
-message c2s_logout{
-    optional uint64 uid = 1;
-};
-
-message s2c_logout{
-    required int32 code = 1;
-};

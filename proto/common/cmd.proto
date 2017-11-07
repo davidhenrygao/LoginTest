@@ -1,4 +1,4 @@
-package common;
+package protocol;
 
 option go_package = "github.com/davidhenrygao/LoginTest/proto/common";
 

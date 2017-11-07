@@ -1,4 +1,4 @@
-package login;
+package protocol;
 
 option go_package = "github.com/davidhenrygao/LoginTest/proto/login";
 
