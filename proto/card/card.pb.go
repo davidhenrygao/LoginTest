@@ -28,8 +28,8 @@ It has these top-level messages:
 	S2CCheckCard
 	C2SGmGetCard
 	S2CGmGetCard
-	C2SLoadCardDesks
-	S2CLoadCardDesks
+	C2SLoadCardDecks
+	S2CLoadCardDecks
 	C2SLoadCards
 	S2CLoadCards
 	C2SUpCardLevel

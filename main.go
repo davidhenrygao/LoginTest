@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/davidhenrygao/LoginTest/proto/card"
 	"github.com/davidhenrygao/LoginTest/proto/common"
 	"github.com/davidhenrygao/LoginTest/proto/login"
 	"github.com/davidhenrygao/LoginTest/proto/player"
@@ -95,6 +96,66 @@ func doLogout(conn net.Conn, uid uint64) error {
 	return nil
 }
 
+func loadCards(conn net.Conn, idx, pz uint32) error {
+	fmt.Printf("load player cards(%d, %d).\n", idx, pz)
+	c2s_load_cards := &card.C2SLoadCards{}
+	if idx != 1 {
+		c2s_load_cards.BeginIndex = proto.Uint32(idx)
+	}
+	if pz != 0 {
+		c2s_load_cards.BeginIndex = proto.Uint32(idx)
+	}
+	data := Marshal(c2s_load_cards)
+	if data == nil {
+		fmt.Println("Marshal c2s_load_cards error.")
+		return fmt.Errorf("Marshal c2s_load_cards error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_LOAD_CARDS), data)
+	if err != nil {
+		fmt.Println("c2s_load_cards writePackage error.")
+		return fmt.Errorf("c2s_load_cards writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_load_cards := &card.S2CLoadCards{}
+	err = Unmarshal(pro.data, s2c_load_cards)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_load_cards error: %+v\n", err)
+		return err
+	}
+	fmt.Printf("s2c_load_cards = %+v\n", s2c_load_cards)
+	return nil
+}
+
+func loadCardDecks(conn net.Conn) error {
+	fmt.Printf("load player card decks.\n")
+	c2s_load_card_decks := &card.C2SLoadCardDesks{}
+	data := Marshal(c2s_load_card_decks)
+	if data == nil {
+		fmt.Println("Marshal c2s_load_card_decks error.")
+		return fmt.Errorf("Marshal c2s_load_card_decks error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_LOAD_CARD_DECKS), data)
+	if err != nil {
+		fmt.Println("c2s_load_card_decks writePackage error.")
+		return fmt.Errorf("c2s_load_card_decks writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_load_card_decks := &card.S2CLoadCardDesks{}
+	err = Unmarshal(pro.data, s2c_load_card_decks)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_load_card_decks error: %+v\n", err)
+		return err
+	}
+	fmt.Printf("s2c_load_card_decks = %+v\n", s2c_load_card_decks)
+	return nil
+}
+
 func launch(serveraddr string, secret, openid, subid []byte, echo string, logout bool) error {
 	fmt.Printf("Connect to server(%s).\n", serveraddr)
 	conn, err := net.Dial("tcp", serveraddr)
@@ -161,6 +222,40 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 		if err != nil {
 			return err
 		}
+		/*
+			for i := 0; i < 10; i++ {
+				fmt.Printf("send echo request(%d).\n", i)
+				err = doEcho(conn, echo)
+				if err != nil {
+					return err
+				}
+				time.Sleep(1 * time.Second)
+			}
+		*/
+	}
+
+	err = loadCards(conn, 1, 0)
+	if err != nil {
+		return err
+	}
+	/*
+		err = loadCards(conn, 3, 0)
+		if err != nil {
+			return err
+		}
+		err = loadCards(conn, 2, 100)
+		if err != nil {
+			return err
+		}
+		err = loadCards(conn, 100, 100)
+		if err != nil {
+			return err
+		}
+	*/
+
+	err = loadCardDecks(conn)
+	if err != nil {
+		return err
 	}
 
 	if logout {
@@ -292,7 +387,8 @@ func main() {
 
 	//login
 	c2s_login := &login.C2SLogin{}
-	openid := "1234567890"
+	//openid := "1234567890"
+	openid := "abcdefghijk"
 	c2s_login.Platformid = proto.Uint32(1)
 	c2s_login.Openid = proto.String(openid)
 	c2s_login.Unionid = proto.String("abcdefghijk")
