@@ -156,6 +156,201 @@ func loadCardDecks(conn net.Conn) error {
 	return nil
 }
 
+func gmGetCard(conn net.Conn, id, amount uint32) error {
+	fmt.Printf("gm player get card.\n")
+	c2s_gm_get_card := &card.C2SGmGetCard{}
+	c2s_gm_get_card.Id = proto.Uint32(id)
+	c2s_gm_get_card.Amount = proto.Uint32(amount)
+	data := Marshal(c2s_gm_get_card)
+	if data == nil {
+		fmt.Println("Marshal c2s_gm_get_card error.")
+		return fmt.Errorf("Marshal c2s_gm_get_card error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_GM_GET_CARD), data)
+	if err != nil {
+		fmt.Println("c2s_load_card_decks writePackage error.")
+		return fmt.Errorf("c2s_load_card_decks writePackage error.")
+	}
+	for true {
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		if pro.cmd == uint32(common.Cmd_GM_GET_CARD) {
+			s2c_gm_get_card := &card.S2CGmGetCard{}
+			err = Unmarshal(pro.data, s2c_gm_get_card)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_gm_get_card error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_gm_get_card = %+v\n", s2c_gm_get_card)
+			break
+		} else {
+			s2c_update_cards := &card.S2CUpdateCards{}
+			err = Unmarshal(pro.data, s2c_update_cards)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_update_cards error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_update_cards = %+v\n", s2c_update_cards)
+		}
+	}
+	return nil
+}
+
+func cardLevelUp(conn net.Conn, id, uplv uint32) error {
+	fmt.Printf("Card level up.\n")
+	c2s_up_card_level := &card.C2SUpCardLevel{}
+	c2s_up_card_level.Id = proto.Uint32(id)
+	c2s_up_card_level.UpLevel = proto.Uint32(uplv)
+	data := Marshal(c2s_up_card_level)
+	if data == nil {
+		fmt.Println("Marshal c2s_up_card_level error.")
+		return fmt.Errorf("Marshal c2s_up_card_level error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_UP_CARD_LEVEL), data)
+	if err != nil {
+		fmt.Println("c2s_up_card_level writePackage error.")
+		return fmt.Errorf("c2s_up_card_level writePackage error.")
+	}
+	for true {
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		if pro.cmd == uint32(common.Cmd_UP_CARD_LEVEL) {
+			s2c_up_card_level := &card.S2CUpCardLevel{}
+			err = Unmarshal(pro.data, s2c_up_card_level)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_up_card_level error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_up_card_level = %+v\n", s2c_up_card_level)
+			break
+		} else {
+			s2c_update_cards := &card.S2CUpdateCards{}
+			err = Unmarshal(pro.data, s2c_update_cards)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_update_cards error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_update_cards = %+v\n", s2c_update_cards)
+		}
+	}
+	return nil
+}
+
+func checkCard(conn net.Conn, id uint32) error {
+	fmt.Printf("Check Card.\n")
+	c2s_check_card := &card.C2SCheckCard{}
+	c2s_check_card.Id = proto.Uint32(id)
+	data := Marshal(c2s_check_card)
+	if data == nil {
+		fmt.Println("Marshal c2s_check_card error.")
+		return fmt.Errorf("Marshal c2s_check_card error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_CHECK_CARD), data)
+	if err != nil {
+		fmt.Println("c2s_check_card writePackage error.")
+		return fmt.Errorf("c2s_check_card writePackage error.")
+	}
+	for true {
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		if pro.cmd == uint32(common.Cmd_CHECK_CARD) {
+			s2c_check_card := &card.S2CCheckCard{}
+			err = Unmarshal(pro.data, s2c_check_card)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_check_card error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_check_card = %+v\n", s2c_check_card)
+			break
+		} else {
+			s2c_update_cards := &card.S2CUpdateCards{}
+			err = Unmarshal(pro.data, s2c_update_cards)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_update_cards error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_update_cards = %+v\n", s2c_update_cards)
+		}
+	}
+	return nil
+}
+
+func changeDeck(conn net.Conn, index uint32) error {
+	fmt.Printf("Change Deck.\n")
+	c2s_change_deck := &card.C2SChangeDeck{}
+	c2s_change_deck.Index = proto.Uint32(index)
+	data := Marshal(c2s_change_deck)
+	if data == nil {
+		fmt.Println("Marshal c2s_change_deck error.")
+		return fmt.Errorf("Marshal c2s_change_deck error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_CHANGE_DECK), data)
+	if err != nil {
+		fmt.Println("c2s_change_deck writePackage error.")
+		return fmt.Errorf("c2s_change_deck writePackage error.")
+	}
+	for true {
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		if pro.cmd == uint32(common.Cmd_CHANGE_DECK) {
+			s2c_change_deck := &card.S2CChangeDeck{}
+			err = Unmarshal(pro.data, s2c_change_deck)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_change_deck error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_change_deck = %+v\n", s2c_change_deck)
+			break
+		}
+	}
+	return nil
+}
+
+func changeCardDeck(conn net.Conn, index, id, pos uint32) error {
+	fmt.Printf("Change card Deck.\n")
+	c2s_change_card_deck := &card.C2SChangeCardDeck{}
+	change_info := &card.ChangeInfo{}
+	change_info.CardDeskIndex = proto.Uint32(index)
+	change_info.Id = proto.Uint32(id)
+	change_info.Pos = proto.Uint32(pos)
+	c2s_change_card_deck.Change = change_info
+	data := Marshal(c2s_change_card_deck)
+	if data == nil {
+		fmt.Println("Marshal c2s_change_card_deck error.")
+		return fmt.Errorf("Marshal c2s_change_card_deck error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_CHANGE_CARD_DECK), data)
+	if err != nil {
+		fmt.Println("c2s_change_card_deck writePackage error.")
+		return fmt.Errorf("c2s_change_card_deck writePackage error.")
+	}
+	for true {
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		if pro.cmd == uint32(common.Cmd_CHANGE_CARD_DECK) {
+			s2c_change_card_deck := &card.S2CChangeCardDeck{}
+			err = Unmarshal(pro.data, s2c_change_card_deck)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_change_card_deck error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_change_card_deck = %+v\n", s2c_change_card_deck)
+			break
+		}
+	}
+	return nil
+}
+
 func launch(serveraddr string, secret, openid, subid []byte, echo string, logout bool) error {
 	fmt.Printf("Connect to server(%s).\n", serveraddr)
 	conn, err := net.Dial("tcp", serveraddr)
@@ -258,6 +453,61 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 		return err
 	}
 
+	err = gmGetCard(conn, 1004, 100)
+	if err != nil {
+		return err
+	}
+
+	err = gmGetCard(conn, 4005, 100000)
+	if err != nil {
+		return err
+	}
+
+	err = cardLevelUp(conn, 4005, 2)
+	if err != nil {
+		return err
+	}
+
+	err = cardLevelUp(conn, 1001, 5)
+	if err != nil {
+		return err
+	}
+
+	err = cardLevelUp(conn, 1001, 14)
+	if err != nil {
+		return err
+	}
+
+	err = checkCard(conn, 1001)
+	if err != nil {
+		return err
+	}
+
+	err = checkCard(conn, 4005)
+	if err != nil {
+		return err
+	}
+
+	err = changeDeck(conn, 2)
+	if err != nil {
+		return err
+	}
+
+	err = changeCardDeck(conn, 0, 1001, 5)
+	if err != nil {
+		return err
+	}
+
+	err = changeCardDeck(conn, 0, 4003, 5)
+	if err != nil {
+		return err
+	}
+
+	err = changeCardDeck(conn, 0, 4005, 5)
+	if err != nil {
+		return err
+	}
+
 	if logout {
 		err = doLogout(conn, player.GetId())
 		if err != nil {
@@ -269,9 +519,9 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 }
 
 func main() {
-	loginserveradd := "192.168.2.188:10086"
+	//loginserveradd := "192.168.2.188:10086"
 	//loginserveradd := "192.168.0.168:10086"
-	//loginserveradd := "192.168.36.64:10086"
+	loginserveradd := "192.168.36.64:10086"
 	fmt.Printf("Connect to server(%s).", loginserveradd)
 	conn, err := net.Dial("tcp", loginserveradd)
 	if err != nil {

@@ -22,7 +22,7 @@ It has these top-level messages:
 	ChangeInfo
 	C2SChangeCardDeck
 	S2CChangeCardDeck
-	C2SChange_Deck
+	C2SChangeDeck
 	S2CChangeDeck
 	C2SCheckCard
 	S2CCheckCard
