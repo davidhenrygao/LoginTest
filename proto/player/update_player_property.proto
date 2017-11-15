@@ -1,0 +1,21 @@
+import "array_elem.proto";
+
+option go_package = "github.com/davidhenrygao/LoginTest/proto/player";
+
+package protocol;
+
+/*
+	enum update_property_key = {
+		LV_EXP = 1,
+		GOLD = 2,
+	};
+*/
+
+//卡牌更新推送
+message s2c_update_player_property {
+	message property {
+		required uint32 key = 1;
+		repeated uarray_elem vals = 2;
+	};
+	repeated property props = 1;
+};

@@ -6,13 +6,18 @@ Package player is a generated protocol buffer package.
 
 It is generated from these files:
 	echo.proto
+	gm_change_player_property.proto
 	logout.proto
+	update_player_property.proto
 
 It has these top-level messages:
 	C2SEcho
 	S2CEcho
+	C2SGmChangePlayerProperty
+	S2CGmChangePlayerProperty
 	C2SLogout
 	S2CLogout
+	S2CUpdatePlayerProperty
 */
 package player
 

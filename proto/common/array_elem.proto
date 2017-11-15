@@ -1,0 +1,13 @@
+package protocol;
+
+option go_package = "github.com/davidhenrygao/LoginTest/proto/common";
+
+message iarray_elem {
+	required int32 value = 1;
+	required uint32 pos = 2;
+};
+
+message uarray_elem {
+	required uint32 value = 1;
+	required uint32 pos = 2;
+};

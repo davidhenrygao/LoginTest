@@ -2,6 +2,8 @@ import "card_deck.proto";
 
 package protocol;
 
+option go_package = "github.com/davidhenrygao/LoginTest/proto/card";
+
 message c2s_load_card_decks{
     optional uint32 p = 1;    //服务器这边pbc不能定义空结构，因此定义该占位符，客户端不填即可。
 };

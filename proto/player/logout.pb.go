@@ -20,7 +20,7 @@ type C2SLogout struct {
 func (m *C2SLogout) Reset()                    { *m = C2SLogout{} }
 func (m *C2SLogout) String() string            { return proto.CompactTextString(m) }
 func (*C2SLogout) ProtoMessage()               {}
-func (*C2SLogout) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*C2SLogout) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *C2SLogout) GetUid() uint64 {
 	if m != nil && m.Uid != nil {
@@ -37,7 +37,7 @@ type S2CLogout struct {
 func (m *S2CLogout) Reset()                    { *m = S2CLogout{} }
 func (m *S2CLogout) String() string            { return proto.CompactTextString(m) }
 func (*S2CLogout) ProtoMessage()               {}
-func (*S2CLogout) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*S2CLogout) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func (m *S2CLogout) GetCode() int32 {
 	if m != nil && m.Code != nil {
@@ -51,9 +51,9 @@ func init() {
 	proto.RegisterType((*S2CLogout)(nil), "protocol.s2c_logout")
 }
 
-func init() { proto.RegisterFile("logout.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("logout.proto", fileDescriptor2) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor2 = []byte{
 	// 138 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xc9, 0xc9, 0x4f, 0xcf,
 	0x2f, 0x2d, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x00, 0x53, 0xc9, 0xf9, 0x39, 0x4a,
