@@ -22,7 +22,7 @@ type S2CUpdatePlayerProperty struct {
 func (m *S2CUpdatePlayerProperty) Reset()                    { *m = S2CUpdatePlayerProperty{} }
 func (m *S2CUpdatePlayerProperty) String() string            { return proto.CompactTextString(m) }
 func (*S2CUpdatePlayerProperty) ProtoMessage()               {}
-func (*S2CUpdatePlayerProperty) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (*S2CUpdatePlayerProperty) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 func (m *S2CUpdatePlayerProperty) GetProps() []*S2CUpdatePlayerPropertyProperty {
 	if m != nil {
@@ -41,7 +41,7 @@ func (m *S2CUpdatePlayerPropertyProperty) Reset()         { *m = S2CUpdatePlayer
 func (m *S2CUpdatePlayerPropertyProperty) String() string { return proto.CompactTextString(m) }
 func (*S2CUpdatePlayerPropertyProperty) ProtoMessage()    {}
 func (*S2CUpdatePlayerPropertyProperty) Descriptor() ([]byte, []int) {
-	return fileDescriptor3, []int{0, 0}
+	return fileDescriptor4, []int{0, 0}
 }
 
 func (m *S2CUpdatePlayerPropertyProperty) GetKey() uint32 {
@@ -63,9 +63,9 @@ func init() {
 	proto.RegisterType((*S2CUpdatePlayerPropertyProperty)(nil), "protocol.s2c_update_player_property.property")
 }
 
-func init() { proto.RegisterFile("update_player_property.proto", fileDescriptor3) }
+func init() { proto.RegisterFile("update_player_property.proto", fileDescriptor4) }
 
-var fileDescriptor3 = []byte{
+var fileDescriptor4 = []byte{
 	// 191 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x29, 0x2d, 0x48, 0x49,
 	0x2c, 0x49, 0x8d, 0x2f, 0xc8, 0x49, 0xac, 0x4c, 0x2d, 0x8a, 0x2f, 0x28, 0xca, 0x2f, 0x48, 0x2d,

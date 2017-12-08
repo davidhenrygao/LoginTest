@@ -7,6 +7,7 @@ Package player is a generated protocol buffer package.
 It is generated from these files:
 	echo.proto
 	gm_change_player_property.proto
+	kick_out_player.proto
 	logout.proto
 	update_player_property.proto
 
@@ -15,6 +16,7 @@ It has these top-level messages:
 	S2CEcho
 	C2SGmChangePlayerProperty
 	S2CGmChangePlayerProperty
+	S2CKickOutPlayer
 	C2SLogout
 	S2CLogout
 	S2CUpdatePlayerProperty

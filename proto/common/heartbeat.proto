@@ -1,0 +1,11 @@
+package protocol;
+
+option go_package = "github.com/davidhenrygao/LoginTest/proto/common";
+
+message c2s_heartbeat {
+    optional string placeholder = 1;
+};
+
+message s2c_heartbeat {
+    required uint64 cur_timestamp = 1;
+};

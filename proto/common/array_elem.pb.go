@@ -8,10 +8,13 @@ It is generated from these files:
 	array_elem.proto
 	cmd.proto
 	error.proto
+	heartbeat.proto
 
 It has these top-level messages:
 	IarrayElem
 	UarrayElem
+	C2SHeartbeat
+	S2CHeartbeat
 */
 package common
 

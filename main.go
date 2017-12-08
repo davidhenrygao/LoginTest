@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/davidhenrygao/LoginTest/proto/battle"
 	"github.com/davidhenrygao/LoginTest/proto/card"
 	"github.com/davidhenrygao/LoginTest/proto/common"
 	"github.com/davidhenrygao/LoginTest/proto/login"
@@ -37,6 +38,33 @@ func base64Decode(s string) []byte {
 }
 
 var index int = 1
+
+func send_heartbeat(conn net.Conn) error {
+	fmt.Println("Send heartbeat msg.")
+	c2s_heartbeat := &common.C2SHeartbeat{}
+	data := Marshal(c2s_heartbeat)
+	if data == nil {
+		fmt.Println("Marshal c2s_heartbeat error.")
+		return fmt.Errorf("Marshal c2s_heartbeat error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_HEARTBEAT), data)
+	if err != nil {
+		fmt.Println("c2s_heartbeat writePackage error.")
+		return fmt.Errorf("c2s_heartbeat writePackage error.")
+	}
+	err, pro := readPackage(conn)
+	if err != nil {
+		return err
+	}
+	s2c_heartbeat := &common.S2CHeartbeat{}
+	err = Unmarshal(pro.data, s2c_heartbeat)
+	if err != nil {
+		fmt.Printf("Unmarshal s2c_heartbeat error: %+v\n", err)
+		return err
+	}
+	fmt.Printf("s2c_heartbeat = %+v\n", s2c_heartbeat)
+	return nil
+}
 
 func doEcho(conn net.Conn, msg string) error {
 	fmt.Println("Send echo msg: ", msg)
@@ -438,6 +466,269 @@ func changeCardDeck(conn net.Conn, index, id, pos uint32) error {
 	return nil
 }
 
+func doBattle(battleServerAddr string, battleId uint32, playerId uint64) error {
+	fmt.Printf("Connect to battle server(%s).\n", battleServerAddr)
+	conn, err := net.Dial("tcp", battleServerAddr)
+	if err != nil {
+		fmt.Printf("Connect to battle server error: %s.\n", err)
+		return err
+	}
+	defer func() {
+		err = conn.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	var counter uint32 = 1
+	c2s_battle_ready := &battle.C2SBattleReady{}
+	c2s_battle_ready.BattleId = proto.Uint32(battleId)
+	c2s_battle_ready.PlayerId = proto.Uint64(playerId)
+	data := Marshal(c2s_battle_ready)
+	if data == nil {
+		fmt.Println("Marshal c2s_battle_ready error.")
+		return fmt.Errorf("Marshal c2s_battle_ready error.")
+	}
+	err = writePackage(conn, uint32(common.Cmd_BATTLE_READY), data)
+	if err != nil {
+		fmt.Println("c2s_battle_ready writePackage error.")
+		return fmt.Errorf("c2s_battle_ready writePackage error.")
+	}
+
+	for true {
+		now := time.Now()
+		deadline := now.Add(10 * time.Second)
+		err = conn.SetReadDeadline(deadline)
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		err = conn.SetReadDeadline(time.Time{})
+		if pro.cmd == uint32(common.Cmd_BATTLE_READY) {
+			s2c_battle_ready := &battle.S2CBattleReady{}
+			err = Unmarshal(pro.data, s2c_battle_ready)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_ready error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_ready = %+v\n", s2c_battle_ready)
+		} else if pro.cmd == uint32(common.Cmd_BATTLE_START) {
+			s2c_battle_start := &battle.S2CBattleStart{}
+			err = Unmarshal(pro.data, s2c_battle_start)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_start error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_start = %+v\n", s2c_battle_start)
+		} else if pro.cmd == uint32(common.Cmd_BATTLE_FRAME_UPDATE) {
+			s2c_battle_frame_update := &battle.S2CBattleFrameUpdate{}
+			err = Unmarshal(pro.data, s2c_battle_frame_update)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_frame_update error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_frame_update = %+v\n", s2c_battle_frame_update)
+			if counter >= 101 {
+				c2s_battle_end := &battle.C2SBattleEnd{}
+				c2s_battle_end.Result = proto.Uint32(0)
+				data = Marshal(c2s_battle_end)
+				if data == nil {
+					fmt.Println("Marshal c2s_battle_end error.")
+					return fmt.Errorf("Marshal c2s_battle_end error.")
+				}
+				err = writePackage(conn, uint32(common.Cmd_BATTLE_END), data)
+				if err != nil {
+					fmt.Println("c2s_battle_end writePackage error.")
+					return fmt.Errorf("c2s_battle_end writePackage error.")
+				}
+			}
+			if counter%4 == 0 {
+				c2s_battle_action := &battle.C2SBattleAction{}
+				c2s_battle_action.ClassId = proto.Uint32(counter)
+				c2s_battle_action.Action = proto.String("fuck you!")
+				data = Marshal(c2s_battle_action)
+				if data == nil {
+					fmt.Println("Marshal c2s_battle_action error.")
+					return fmt.Errorf("Marshal c2s_battle_action error.")
+				}
+				err = writePackage(conn, uint32(common.Cmd_BATTLE_ACTION), data)
+				if err != nil {
+					fmt.Println("c2s_battle_action writePackage error.")
+					return fmt.Errorf("c2s_battle_action writePackage error.")
+				}
+			}
+			counter++
+		} else if pro.cmd == uint32(common.Cmd_BATTLE_ACTION) {
+			s2c_battle_action := &battle.S2CBattleAction{}
+			err = Unmarshal(pro.data, s2c_battle_action)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_action error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_action = %+v\n", s2c_battle_action)
+		} else if pro.cmd == uint32(common.Cmd_BATTLE_END) {
+			s2c_battle_end := &battle.S2CBattleEnd{}
+			err = Unmarshal(pro.data, s2c_battle_end)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_end error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_end = %+v\n", s2c_battle_end)
+			break
+		} else {
+			fmt.Println("Unknown command = %+v.\n", pro.cmd)
+			break
+		}
+	}
+	return nil
+}
+
+func test_match_and_battle(conn net.Conn, playerId uint64) error {
+	fmt.Printf("Test match and battle.\n")
+	c2s_match_start := &battle.C2SMatchStart{}
+	c2s_match_start.Type = proto.Uint32(1)
+	data := Marshal(c2s_match_start)
+	if data == nil {
+		fmt.Println("Marshal c2s_match_start error.")
+		return fmt.Errorf("Marshal c2s_match_start error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_MATCH_START), data)
+	if err != nil {
+		fmt.Println("c2s_up_card_level writePackage error.")
+		return fmt.Errorf("c2s_up_card_level writePackage error.")
+	}
+	now := time.Now()
+	deadline := now.Add(10 * time.Second)
+	err = conn.SetReadDeadline(deadline)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = conn.SetReadDeadline(time.Time{})
+	}()
+	for true {
+		now = time.Now()
+		deadline = now.Add(10 * time.Second)
+		err = conn.SetReadDeadline(deadline)
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		err = conn.SetReadDeadline(time.Time{})
+		if pro.cmd == uint32(common.Cmd_MATCH_START) {
+			s2c_match_start := &battle.S2CMatchStart{}
+			err = Unmarshal(pro.data, s2c_match_start)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_match_start error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_match_start = %+v\n", s2c_match_start)
+		} else if pro.cmd == uint32(common.Cmd_MATCH_UPDATE) {
+			s2c_match_update := &battle.S2CMatchUpdate{}
+			err = Unmarshal(pro.data, s2c_match_update)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_match_update error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_match_update = %+v\n", s2c_match_update)
+		} else if pro.cmd == uint32(common.Cmd_BATTLE_INIT) {
+			s2c_battle_init := &battle.S2CBattleInit{}
+			err = Unmarshal(pro.data, s2c_battle_init)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_battle_init error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_battle_init = %+v\n", s2c_battle_init)
+			battleId := s2c_battle_init.GetBattleId()
+			battleServerAddr := s2c_battle_init.GetServerAddr()
+			err = doBattle(battleServerAddr, battleId, playerId)
+			if err != nil {
+				return err
+			}
+			break
+		} else {
+			fmt.Println("Unknown command = %+v.\n", pro.cmd)
+			break
+		}
+	}
+	return nil
+}
+
+func test_match_and_cancel(conn net.Conn) error {
+	fmt.Printf("Test match and cancel.\n")
+	c2s_match_start := &battle.C2SMatchStart{}
+	c2s_match_start.Type = proto.Uint32(1)
+	data := Marshal(c2s_match_start)
+	if data == nil {
+		fmt.Println("Marshal c2s_match_start error.")
+		return fmt.Errorf("Marshal c2s_match_start error.")
+	}
+	err := writePackage(conn, uint32(common.Cmd_MATCH_START), data)
+	if err != nil {
+		fmt.Println("c2s_up_card_level writePackage error.")
+		return fmt.Errorf("c2s_up_card_level writePackage error.")
+	}
+	now := time.Now()
+	deadline := now.Add(10 * time.Second)
+	err = conn.SetReadDeadline(deadline)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = conn.SetReadDeadline(time.Time{})
+	}()
+	for true {
+		now = time.Now()
+		deadline = now.Add(10 * time.Second)
+		err = conn.SetReadDeadline(deadline)
+		err, pro := readPackage(conn)
+		if err != nil {
+			return err
+		}
+		err = conn.SetReadDeadline(time.Time{})
+		if pro.cmd == uint32(common.Cmd_MATCH_START) {
+			s2c_match_start := &battle.S2CMatchStart{}
+			err = Unmarshal(pro.data, s2c_match_start)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_match_start error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_match_start = %+v\n", s2c_match_start)
+		} else if pro.cmd == uint32(common.Cmd_MATCH_UPDATE) {
+			s2c_match_update := &battle.S2CMatchUpdate{}
+			err = Unmarshal(pro.data, s2c_match_update)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_match_update error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_match_update = %+v\n", s2c_match_update)
+			c2s_battle_cancel := &battle.C2SMatchCancel{}
+			data = Marshal(c2s_battle_cancel)
+			if data == nil {
+				fmt.Println("Marshal c2s_battle_cancel error.")
+				return fmt.Errorf("Marshal c2s_battle_cancel error.")
+			}
+			err = writePackage(conn, uint32(common.Cmd_MATCH_CANCEL), data)
+			if err != nil {
+				fmt.Println("c2s_battle_cancel writePackage error.")
+				return fmt.Errorf("c2s_battle_cancel writePackage error.")
+			}
+		} else if pro.cmd == uint32(common.Cmd_MATCH_CANCEL) {
+			s2c_match_cancel := &battle.S2CMatchCancel{}
+			err = Unmarshal(pro.data, s2c_match_cancel)
+			if err != nil {
+				fmt.Printf("Unmarshal s2c_match_cancel error: %+v\n", err)
+				return err
+			}
+			fmt.Printf("s2c_match_cancel = %+v\n", s2c_match_cancel)
+			break
+		} else {
+			fmt.Println("Unknown command = %+v.\n", pro.cmd)
+			break
+		}
+	}
+	return nil
+}
 func launch(serveraddr string, secret, openid, subid []byte, echo string, logout bool) error {
 	fmt.Printf("Connect to server(%s).\n", serveraddr)
 	conn, err := net.Dial("tcp", serveraddr)
@@ -452,6 +743,12 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 		}
 		index++
 	}()
+
+	err = send_heartbeat(conn)
+	if err != nil {
+		fmt.Printf("launch send_heartbeat err = %+v\n", err)
+		return err
+	}
 
 	c2s_launch := &login.C2SLaunch{}
 	t := base64.StdEncoding.EncodeToString(openid)
@@ -540,6 +837,12 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 		return err
 	}
 
+	err = send_heartbeat(conn)
+	if err != nil {
+		fmt.Printf("launch send_heartbeat err = %+v\n", err)
+		return err
+	}
+
 	err = gmGetCard(conn, 1004, 100)
 	if err != nil {
 		return err
@@ -612,6 +915,12 @@ func launch(serveraddr string, secret, openid, subid []byte, echo string, logout
 		}
 	*/
 
+	//err = test_match_and_cancel(conn)
+	err = test_match_and_battle(conn, player.GetId())
+	if err != nil {
+		return err
+	}
+
 	if logout {
 		err = doLogout(conn, player.GetId())
 		if err != nil {
@@ -664,6 +973,12 @@ func main() {
 	fmt.Printf("challenge: %#x\n", challenge)
 
 	//time.Sleep(10 * time.Second)
+
+	err = send_heartbeat(conn)
+	if err != nil {
+		fmt.Printf("send_heartbeat err = %+v\n", err)
+		return
+	}
 
 	//exchangekey
 	c2s_exchangekey := &login.C2SExchangekey{}
@@ -739,13 +1054,25 @@ func main() {
 		return
 	}
 
+	err = send_heartbeat(conn)
+	if err != nil {
+		fmt.Printf("send_heartbeat err = %+v\n", err)
+		return
+	}
+
+	err = send_heartbeat(conn)
+	if err != nil {
+		fmt.Printf("send_heartbeat err = %+v\n", err)
+		return
+	}
+
 	//login
 	c2s_login := &login.C2SLogin{}
-	//openid := "1234567890"
-	openid := "abcdefghijklmn"
+	openid := "1234567890"
+	//openid := "abcde"
 	c2s_login.Platformid = proto.Uint32(1)
 	c2s_login.Openid = proto.String(openid)
-	c2s_login.Unionid = proto.String("abcdefghijk")
+	c2s_login.Unionid = proto.String("abcde")
 	c2s_login.Nickname = proto.String("david")
 	c2s_login.Headimgurl = proto.String("https://www.wx.com/davidhenry.jpg")
 	/*
@@ -804,13 +1131,11 @@ func main() {
 	fmt.Printf("serveraddr: %s.\n", string(serveraddr))
 
 	//launch 1
-	/*
-		err = launch(string(serveraddr), secret, []byte(openid), subid, "Hi! Server", false)
-		if err != nil {
-			fmt.Printf("launch error = %+v\n", err)
-			return
-		}
-	*/
+	err = launch(string(serveraddr), secret, []byte(openid), subid, "Hi! Server", false)
+	if err != nil {
+		fmt.Printf("launch error = %+v\n", err)
+		return
+	}
 	//launch 2
 	err = launch(string(serveraddr), secret, []byte(openid), subid, "Good luck!", true)
 	if err != nil {

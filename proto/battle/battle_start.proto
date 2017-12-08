@@ -1,0 +1,7 @@
+package protocol;
+
+option go_package = "github.com/davidhenrygao/LoginTest/proto/battle";
+
+message s2c_battle_start {
+	optional uint32 placeholder = 1;
+};
