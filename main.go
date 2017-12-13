@@ -528,6 +528,7 @@ func doBattle(battleServerAddr string, battleId uint32, playerId uint64) error {
 				return err
 			}
 			fmt.Printf("s2c_battle_frame_update = %+v\n", s2c_battle_frame_update)
+			frame_id := s2c_battle_frame_update.GetFrameId()
 			if counter >= 101 {
 				c2s_battle_end := &battle.C2SBattleEnd{}
 				c2s_battle_end.Result = proto.Uint32(0)
@@ -544,6 +545,7 @@ func doBattle(battleServerAddr string, battleId uint32, playerId uint64) error {
 			}
 			if counter%4 == 0 {
 				c2s_battle_action := &battle.C2SBattleAction{}
+				c2s_battle_action.FrameId = proto.Uint32(frame_id + 1)
 				c2s_battle_action.ClassId = proto.Uint32(counter)
 				c2s_battle_action.Action = proto.String("fuck you!")
 				data = Marshal(c2s_battle_action)

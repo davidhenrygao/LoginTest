@@ -3,8 +3,9 @@ package protocol;
 option go_package = "github.com/davidhenrygao/LoginTest/proto/battle";
 
 message c2s_battle_action {
-	required uint32 class_id = 1;
-	required string action = 2;    //行为数据
+	required uint32 frame_id = 1;
+	required uint32 class_id = 2;
+	required string action = 3;    //行为数据
 };
 
 message s2c_battle_action {
